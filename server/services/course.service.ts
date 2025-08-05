@@ -1,20 +1,28 @@
 import { NextFunction, Request, Response } from "express";
 import { CatchAsyncError } from "../middleware/catchAsyncErrors";
 import CourseModel from "../models/course.model";
+import { redis } from "../utils/redis";
 
 //create course
-export const createCourse = CatchAsyncError(async (data:any, res: Response) => {
+export const createCourse = CatchAsyncError(
+  async (data: any, res: Response) => {
     const course = await CourseModel.create(data);
+    const courses = await CourseModel.find().select(
+      "-courseData.videoUrl -courseData.suggestion -courseData.questions -courseData.links"
+    );
+    await redis.set("allCourses", JSON.stringify(courses));
+
     res.status(201).json({
-        success: true,
-        course
-    })
-})
+      success: true,
+      course,
+    });
+  }
+);
 
 export const getAllCoursesService = async (res: Response) => {
-    const courses = await CourseModel.find().sort({ createdAt: -1 })
-    res.status(201).json({
-        success: true,
-        courses,
-    })
-}
+  const courses = await CourseModel.find().sort({ createdAt: -1 });
+  res.status(201).json({
+    success: true,
+    courses,
+  });
+};

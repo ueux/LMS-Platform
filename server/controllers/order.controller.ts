@@ -9,6 +9,7 @@ import path from "path";
 import ejs from "ejs";
 import sendMail from "../utils/sendMail";
 import NotificationModel from "../models/notification.model";
+import { redis } from "../utils/redis";
 
 //craete Order
 export const createOrder = CatchAsyncError(
@@ -68,8 +69,15 @@ export const createOrder = CatchAsyncError(
         title: "New Order",
         message: `You have recieved a new order from ${course.name}`,
       });
-      course.purchase ? (course.purchase += 1) : course.purchase;
+      course.purchase += 1;
       await course.save();
+      if (user && user._id) {
+        await redis.set(user._id.toString(), JSON.stringify(user), "EX", 604800)//7 days
+      }
+              const courses = await CourseModel.find().select(
+          "-courseData.videoUrl -courseData.suggestion -courseData.questions -courseData.links"
+        );
+        await redis.set("allCourses", JSON.stringify(courses));
       newOrder(data, res, next);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
