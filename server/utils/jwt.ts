@@ -29,7 +29,7 @@ const accessTokenExpire = parseInt(
     sameSite: "lax",
   };
  export const refreshTokenOptions: ITokenOptions = {
-    expires: new Date(Date.now() + refreshTokenExpire * 1000),
+    expires: new Date(Date.now() + refreshTokenExpire*60*60*24 * 1000),
     maxAge: refreshTokenExpire*60*60*24 * 1000,
     httpOnly: true,
     sameSite: "lax",

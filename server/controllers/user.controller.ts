@@ -357,6 +357,10 @@ export const updateFilePath = CatchAsyncError(
             folder: "avatars",
             width: 150,
           });
+          user.avatar = {
+            public_id: myCloud.public_id,
+            url: myCloud.secure_url,
+          };
         } else {
           const myCloud = await cloudinary.v2.uploader.upload(avatar, {
             folder: "avatars",

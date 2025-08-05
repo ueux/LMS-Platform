@@ -38,7 +38,7 @@ export const updateNotifications = CatchAsyncError(
       });
       res.status(201).json({
         success: true,
-        notification,
+        notifications,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));

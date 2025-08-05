@@ -33,6 +33,12 @@ userRouter.get(
   authorizeRoles("admin"),
   getAllUsers
 );
+userRouter.put(
+  "/update-user",
+  isAuthenticated,
+  authorizeRoles("admin"),
+  updateUserRole
+);
 userRouter.delete(
   "/delete-user/:id",
   isAuthenticated,
