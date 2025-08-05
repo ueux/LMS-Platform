@@ -1,20 +1,23 @@
+import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
-import mongoose, { Document, model, Model, Schema } from "mongoose";
+require("dotenv").config();
+import jwt from "jsonwebtoken";
 
-const emailRegexPattern:RegExp=/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-
-interface IUser extends Document{
-    name: string;
-    email: string;
-    password: string;
-    avatar: {
-        public_id: string;
-        url: string;
-    },
-    role: string;
-    isVerified: boolean;
-    courses: Array<{ courseId: string }>
-    comparePassword:(password:string)=>Promise<boolean>
+const emailRegex: RegExp = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+  avatar: {
+    public_id: string;
+    url: string;
+  };
+  role: string;
+  isVerified: boolean;
+  courses: Array<{ courseId: string }>;
+  comparePassword: (enteredPassword: string) => Promise<boolean>;
+  SignAccessToken: () => string;
+  SignRefreshToken: () => SVGStringList;
 }
 const userSchema: Schema<IUser> = new mongoose.Schema(
   {
@@ -26,22 +29,25 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: String,
       required: [true, "Please enter your email"],
       validate: {
-        validator: function (value: string) {
-          return emailRegexPattern.test(value);
+        validator: function (v: string) {
+          return emailRegex.test(v);
         },
-        message: "Please enter a valid email",
+        message: `Please Enter a valid email`,
       },
       unique: true,
     },
     password: {
       type: String,
-      required: [true, "Please enter your password"],
-      minlength: [6, "Password must be at least 6 characters"],
+      minlength: [6, "Your password must be longer than 6 characters"],
       select: false,
     },
     avatar: {
-      public_id: String,
-      url: String,
+      public_id: {
+        type: String,
+      },
+      url: {
+        type: String,
+      },
     },
     role: {
       type: String,
@@ -57,26 +63,37 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       },
     ],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// 🔒 Hash password before saving
+//Hash Password before saving
 userSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
+  if (!this.isModified("password")) {
+    next();
+  }
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// 🔐 Compare password method
+//sign access token
+userSchema.methods.SignAccessToken = function () {
+    return jwt.sign({ id: this._id }, process.env.ACCESS_TOKEN || "", {
+        expiresIn: "5m",
+  });
+};
+
+//sign refresh token
+userSchema.methods.SignRefreshToken = function () {
+    return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN || "", {
+        expiresIn: "3d",
+  });
+};
+
+// compare password
 userSchema.methods.comparePassword = async function (
   enteredPassword: string
 ): Promise<boolean> {
   return await bcrypt.compare(enteredPassword, this.password);
 };
-
-const userModel: Model<IUser> = model<IUser>("User", userSchema);
-
+const userModel: Model<IUser> = mongoose.model("User", userSchema);
 export default userModel;
